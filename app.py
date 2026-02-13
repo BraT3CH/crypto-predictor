@@ -11,17 +11,22 @@ from datetime import datetime
 import time
 
 # ============================================================
-# CONFIGURATION - Add your API key here!
+# CONFIGURATION - API Keys
 # ============================================================
-# OPTION 1: Anthropic (Paid - need credits)
-ANTHROPIC_API_KEY = "your-api-key-here"
+# For local testing, you can put keys here temporarily
+# For deployment, use Streamlit Secrets instead!
 
-# OPTION 2: Groq (FREE - No credit card needed!)
-# Get free key from: https://console.groq.com
-GROQ_API_KEY = "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"
+# Try to get from Streamlit secrets first (when deployed)
+try:
+    GROQ_API_KEY = st.secrets.get("GROQ_API_KEY", "")
+    ANTHROPIC_API_KEY = st.secrets.get("ANTHROPIC_API_KEY", "")
+except:
+    # If not in Streamlit Cloud, use these (for local testing only!)
+    GROQ_API_KEY = ""  # ← Add your key here for LOCAL testing only
+    ANTHROPIC_API_KEY = ""
 
 # Which API to use? "anthropic" or "groq"
-USE_API = "groq"  # ← Change to "groq" for free API!
+USE_API = "groq"  # ← Set to "groq" for free API!
 
 # ============================================================
 # DON'T EDIT BELOW THIS LINE
@@ -33,12 +38,12 @@ LLM_AVAILABLE = False
 API_NAME = "None"
 
 # Try Groq first (FREE!)
-if USE_API == "groq" and GROQ_API_KEY != "your-groq-key-here":
+if USE_API == "groq" and GROQ_API_KEY and len(GROQ_API_KEY) > 10:
     try:
         from groq import Groq
         llm_client = Groq(api_key=GROQ_API_KEY)
         LLM_AVAILABLE = True
-        API_NAME = "BRA K"
+        API_NAME = "Groq (Free)"
         print(f"✅ Groq API loaded! (Free AI)")
     except ImportError:
         print("⚠️ Groq not installed. Run: pip install groq")
@@ -46,7 +51,7 @@ if USE_API == "groq" and GROQ_API_KEY != "your-groq-key-here":
         print(f"❌ Groq error: {e}")
 
 # Try Anthropic
-elif USE_API == "anthropic" and ANTHROPIC_API_KEY != "your-api-key-here":
+elif USE_API == "anthropic" and ANTHROPIC_API_KEY and len(ANTHROPIC_API_KEY) > 10:
     try:
         import anthropic
         llm_client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
