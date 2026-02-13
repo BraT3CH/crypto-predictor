@@ -13,20 +13,52 @@ import time
 # ============================================================
 # CONFIGURATION - Add your API key here!
 # ============================================================
-ANTHROPIC_API_KEY = "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"  # ← PUT YOUR API KEY HERE!
+# OPTION 1: Anthropic (Paid - need credits)
+ANTHROPIC_API_KEY = "your-api-key-here"
 
-# If you want to use Anthropic LLM, install: pip install anthropic
-try:
-    import anthropic
-    LLM_AVAILABLE = True
-    if ANTHROPIC_API_KEY and ANTHROPIC_API_KEY != "your-api-key-here":
+# OPTION 2: Groq (FREE - No credit card needed!)
+# Get free key from: https://console.groq.com
+GROQ_API_KEY = "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"
+
+# Which API to use? "anthropic" or "groq"
+USE_API = "groq"  # ← Change to "groq" for free API!
+
+# ============================================================
+# DON'T EDIT BELOW THIS LINE
+# ============================================================
+
+# Initialize LLM client
+llm_client = None
+LLM_AVAILABLE = False
+API_NAME = "None"
+
+# Try Groq first (FREE!)
+if USE_API == "groq" and GROQ_API_KEY != "your-groq-key-here":
+    try:
+        from groq import Groq
+        llm_client = Groq(api_key=GROQ_API_KEY)
+        LLM_AVAILABLE = True
+        API_NAME = "BRA K"
+        print(f"✅ Groq API loaded! (Free AI)")
+    except ImportError:
+        print("⚠️ Groq not installed. Run: pip install groq")
+    except Exception as e:
+        print(f"❌ Groq error: {e}")
+
+# Try Anthropic
+elif USE_API == "anthropic" and ANTHROPIC_API_KEY != "your-api-key-here":
+    try:
+        import anthropic
         llm_client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
-    else:
-        llm_client = None
-        LLM_AVAILABLE = False
-except ImportError:
-    LLM_AVAILABLE = False
-    llm_client = None
+        LLM_AVAILABLE = True
+        API_NAME = "Anthropic Claude"
+        print(f"✅ Anthropic API loaded!")
+    except ImportError:
+        print("⚠️ Anthropic not installed. Run: pip install anthropic")
+    except Exception as e:
+        print(f"❌ Anthropic error: {e}")
+else:
+    print("⚠️ No API configured. Technical analysis only.")
 
 
 # ============================================================
@@ -280,18 +312,29 @@ ANSWER: [YES/NO]
 REASONING: [One sentence]"""
 
     try:
-        message = llm_client.messages.create(
-            model="claude-sonnet-4-20250514",
-            max_tokens=200,
-            messages=[{"role": "user", "content": prompt}]
-        )
+        # Use Groq API (FREE)
+        if USE_API == "groq":
+            response = llm_client.chat.completions.create(
+                model="llama-3.3-70b-versatile",  # Free model
+                messages=[{"role": "user", "content": prompt}],
+                max_tokens=200
+            )
+            response_text = response.choices[0].message.content
         
-        response = message.content[0].text
+        # Use Anthropic API
+        else:
+            message = llm_client.messages.create(
+                model="claude-sonnet-4-20250514",
+                max_tokens=200,
+                messages=[{"role": "user", "content": prompt}]
+            )
+            response_text = message.content[0].text
         
+        # Parse response
         answer = "Unknown"
         reasoning = "Analysis unavailable"
         
-        for line in response.split('\n'):
+        for line in response_text.split('\n'):
             if "ANSWER:" in line:
                 answer = line.split(":", 1)[1].strip()
             elif "REASONING:" in line:
@@ -333,6 +376,15 @@ def main():
         "This AI uses technical indicators like RSI, Moving Averages, "
         "and Volume analysis to predict crypto price movements."
     )
+    
+    # API Status
+    st.sidebar.markdown("---")
+    st.sidebar.markdown("### 🔑 API Status")
+    if LLM_AVAILABLE and llm_client:
+        st.sidebar.success(f"✅ AI Active: {API_NAME}")
+    else:
+        st.sidebar.warning("⚠️ AI Sentiment: Disabled")
+        st.sidebar.caption("Technical analysis still works!")
     
     # Main content
     if predict_button:
